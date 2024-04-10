@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 int *get_date_data(char *date);
+int *get_weekly_data(char *date);
 
 int main() {
     FILE *fp;
@@ -129,6 +130,7 @@ int *get_date_data(char *date) {
                 }
             }
             fclose(fp);
+            get_weekly_data(date);
             return 0;
         }
     }
@@ -138,5 +140,65 @@ int *get_date_data(char *date) {
     scanf("%d/%d/%d", &month, &day, &year);
     sprintf(date2, "%d/%d/%d", month, day, year);
     get_date_data(date2);
+    return 0;
+}
+
+int *get_weekly_data(char *date) {
+    FILE *fp;
+    char string[400];
+    char *tknPtr;
+    char *endPtr;
+    int i;
+    char date2[50];
+    int month, day, year;
+    float sum, init, final;
+    int count;
+    
+    count = 0;
+    sum = 0;
+    
+    puts("\n");
+    fp = fopen("./spxpc.csv", "r");
+    for (i = 0; i < 2332; i++) {
+        fgets(string, 399, (FILE*)fp);
+        tknPtr = strtok(string, ",");
+        if ( strstr(string, date) != NULL ) {
+            printf("Date: %s", tknPtr);
+            tknPtr = strtok(NULL, ",");
+            sum += strtod(tknPtr, &endPtr);
+            init = sum;
+            count += 1;
+            printf("  %f\n%d\n", sum, count);
+        }
+        else {
+            if (count > 0) {
+                printf("Date: %s", tknPtr);
+                tknPtr = strtok(NULL, ",");
+                final = strtod(tknPtr, &endPtr);
+                sum += final;
+                count += 1;
+                printf("  %f\n%d\n", sum, count);
+                if (count == 7) {
+                    printf("Avg Ratio: %f\n%d\n", sum / count, count);
+                    printf("Initial Ratio: %f\n", init);
+                    printf("Final Ratio: %f\n", final);
+                    if (init < final) {
+                        printf("Woohoo! The stock is doing well.\n");
+                    }
+                    else {
+                        if (init > final) {
+                            printf("Woops! The stock is doing badly.\n");
+                        }
+                        else {
+                            printf("Woohoo! The stock is doing well.\n");
+                        }
+                    }
+                    fclose(fp);
+                    return 0;
+                }
+            }
+        }
+    }
+    fclose(fp);
     return 0;
 }
