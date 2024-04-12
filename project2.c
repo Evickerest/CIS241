@@ -2,148 +2,132 @@
 #include <string.h>
 #include <stdlib.h>
 
-int *get_date_data(char *date);
+void get_date_data(char *data);
 int *get_data(char *date, int entries);
+void readDateFromUser(char *date);
+void getDataFromDate(char *date, char*dateData);
 
 int main() {
-    FILE *fp;
-    char date[50];
-    int month;
-    int day;
-    int year;
-    puts("Enter the date you want to get data for.\n  Format: M/D/Y - Do Not Include Leading Zeros\n  Valid Date Range: 7/6/10 - 10/4/19");
-    scanf("%d/%d/%d", &month, &day, &year);
-    sprintf(date, "%d/%d/%d", month, day, year);
-
-    get_date_data(date);
+    char date[50], data[400];
+  
+    do {
+        readDateFromUser(date); 
+        getDataFromDate(date, data);
+    }
+    while( strcmp("none", data) == 0 ); 
+    // if no data ask user for date again
+   
+    get_date_data(data);
     return 0;
 }
 
-int *get_date_data(char *date) {
-    FILE *fp;
-    char string[400];
-    char *tknPtr;
-    char *endPtr;
-    int i;
-    char date2[50];
-    int month;
-    int day;
-    int year;
+
+void readDateFromUser(char *date){
+    int m, d, y;
+
+    puts("Enter the date you want to get data for.\n  Format: M/D/Y - Do Not Include Leading Zeros\n  Valid Date Range: 7/6/10 - 10/4/19");
     
-    puts("\n");
+    scanf("%d/%d/%d", &m, &d, &y);
+    sprintf(date, "%d/%d/%d", m, d, y);
+}
+
+
+void getDataFromDate(char * date, char * dateData){
+    FILE *fp;
+    unsigned short int dataFound = 0; //saves memory
     fp = fopen("./spxpc.csv", "r");
-    for (i = 0; i < 2332; i++) {
-        fgets(string, 399, (FILE*)fp);
-        tknPtr = strtok(string, ",");
-        if ( strstr(string, date) != NULL ) {
-            printf("The Stock Data for the Date: %s\n", tknPtr);
-            tknPtr = strtok(NULL, ",");
-            printf("  The Put/Call Ratio is: %s\n", tknPtr);
-            if ( strtod(tknPtr, &endPtr) < 0.4 ) {
-                printf("    The Stock is Dangerously Bearish: %s\n", tknPtr);
-            }
-            else {
-                if ( strtod(tknPtr, &endPtr) < 0.7 ) {
-                    printf("    The Stock is Bearish: %s\n", tknPtr);
-                }
-                else {
-                    if ( strtod(tknPtr, &endPtr) > 1.2 ) {
-                        printf("    The Stock is Very Bullish: %s\n", tknPtr);
-                    }
-                    else {
-                        if ( strtod(tknPtr, &endPtr) > 1 ) {
-                            printf("    The Stock is Bullish: %s\n", tknPtr);
-                        }
-                        else {
-                            printf("    The Stock is Normal: %s\n", tknPtr);
-                        }
-                    }
-                }
-            }
-            tknPtr = strtok(NULL, ",");
-            printf("  The SPX Put Volume is: %s\n", tknPtr);
-            if ( strtod(tknPtr, &endPtr) > 700000 ) {
-                printf("    The Stock Has Very High Put: %s\n", tknPtr);
-            }
-            else {
-                if ( strtod(tknPtr, &endPtr) > 500000 ) {
-                    printf("    The Stock Has High Put: %s\n", tknPtr);
-                }
-                else {
-                    if ( strtod(tknPtr, &endPtr) > 300000 ) {
-                        printf("    The Stock Has Normal Put: %s\n", tknPtr);
-                    }
-                    else {
-                        if ( strtod(tknPtr, &endPtr) > 100000 ) {
-                            printf("    The Stock Has Low Put: %s\n", tknPtr);
-                        }
-                        else {
-                            printf("    The Stock Has Very Low: %s\n", tknPtr);
-                        }
-                    }
-                }
-            }
-            tknPtr = strtok(NULL, ",");
-            printf("  The SPX Call Volume is: %s\n", tknPtr);
-            if ( strtod(tknPtr, &endPtr) > 700000 ) {
-                printf("    The Stock Has Very High Call: %s\n", tknPtr);
-            }
-            else {
-                if ( strtod(tknPtr, &endPtr) > 500000 ) {
-                    printf("    The Stock Has High Call: %s\n", tknPtr);
-                }
-                else {
-                    if ( strtod(tknPtr, &endPtr) > 300000 ) {
-                        printf("    The Stock Has Normal Call: %s\n", tknPtr);
-                    }
-                    else {
-                        if ( strtod(tknPtr, &endPtr) > 100000 ) {
-                            printf("    The Stock Has Low Call: %s\n", tknPtr);
-                        }
-                        else {
-                            printf("    The Stock Has Very Call: %s\n", tknPtr);
-                        }
-                    }
-                }
-            }
-            tknPtr = strtok(NULL, ",");
-            printf("  The Total SPX Options Volume is: %s", tknPtr);
-            if ( strtod(tknPtr, &endPtr) > 1000000 ) {
-                printf("    The Stock Has Very High Volume: %s\n", tknPtr);
-            }
-            else {
-                if ( strtod(tknPtr, &endPtr) > 700000 ) {
-                    printf("    The Stock Has High Volume: %s\n", tknPtr);
-                }
-                else {
-                    if ( strtod(tknPtr, &endPtr) > 500000 ) {
-                        printf("    The Stock Has Normal Volume: %s\n", tknPtr);
-                    }
-                    else {
-                        if ( strtod(tknPtr, &endPtr) > 300000 ) {
-                            printf("    The Stock Has  Low Volume: %s\n", tknPtr);
-                        }
-                        else {
-                            printf("    The Stock Has Very Low: %s\n", tknPtr);
-                        }
-                    }
-                }
-            }
-            fclose(fp);
-            get_data(date, 7);
-            get_data(date, 30);
-            get_data(date, 90);
-            get_data(date, 365);
-            return 0;
-        }
+
+    // loop through until match is found
+    while( fgets(dateData, 399, (FILE*)fp) != NULL ){
+        if( strstr(dateData, date)){
+            dataFound = 1;
+            break;
+        } 
+    } 
+    if( dataFound == 0){ // if no match was ever found
+        printf("\nNo entry found for %s\n\n", date);
+        strcpy(dateData, "none");
     }
     fclose(fp);
-    printf("The date (%s) doesn't have an entry.\n", date);
-    puts("Enter another date you want to get data for.\n  Format: M/D/Y - Do Not Include Leading Zeros\n  Valid Date Range: 7/6/10 - 10/4/19");
-    scanf("%d/%d/%d", &month, &day, &year);
-    sprintf(date2, "%d/%d/%d", month, day, year);
-    get_date_data(date2);
-    return 0;
+}
+
+
+void getStockQuality(double ratio, char *quality){
+    if( ratio >= 2 ){ // bearish
+        strcpy(quality,"dangerously bearish");
+    } else if( ratio >= 1.75){
+        strcpy(quality,"very bearish");
+    } else if( ratio >= 1.3){
+        strcpy(quality,"moderately bearish");
+    } else if( ratio >= 1){
+        strcpy(quality,"normal");
+    } else if( ratio >= 0.9){
+        strcpy(quality,"moderately bullish");
+    } else {
+        strcpy(quality,"very bullish");
+    }
+}
+
+void getVolumeQuality(double volume, char *quality){
+    if( volume >= 8e5 ){ 
+        strcpy(quality,"very high");
+    } else if( volume >= 7e5){
+        strcpy(quality,"high");
+    } else if( volume >= 6e5){
+        strcpy(quality,"moderately high");
+    } else if( volume >= 5e5){
+        strcpy(quality,"normal");
+    } else if( volume >= 4e5){
+        strcpy(quality,"less than normal");
+    } else if( volume >= 3e5){
+        strcpy(quality,"moderately low");
+    } else if( volume >= 2e5){
+        strcpy(quality,"low");
+    } else {
+        strcpy(quality,"very low");
+    }
+}
+
+void printVolumeQualityMessage(char *message, double volume ){
+    char quality[30];
+    getVolumeQuality(volume, quality);
+    printf("\n\t\t%s %s.\n\n", message, quality);
+}
+
+void printStockQualityMessage(char *message, double volume ){
+    char quality[30];
+    getStockQuality(volume, quality);
+    printf("\n\t\t%s %s.\n\n", message, quality);
+}
+
+
+void get_date_data(char*data) {
+    char *tknPtr, *endPtr;
+  
+    // Stock Data
+    tknPtr = strtok(data, ",");
+    printf("\n\nThe Stock Data for the Date: %s\n", tknPtr);
+
+    // Put/Call Ratio
+    tknPtr = strtok(NULL, ",");
+    printf("\tThe Put/Call ratio is: %s", tknPtr);
+    printStockQualityMessage("The Stock is", strtod(tknPtr, &endPtr));
+
+    // Put
+    tknPtr = strtok(NULL, ",");
+    printf("\tThe SPX Put Volume is: %s", tknPtr);
+    printVolumeQualityMessage("The SPX Put Volume is", strtod(tknPtr, &endPtr));
+
+    // Call
+    tknPtr = strtok(NULL, ",");
+    printf("\tThe SPX Call Volume is: %s", tknPtr);
+    printVolumeQualityMessage("The SPX Call Volume is", strtod(tknPtr, &endPtr));
+
+    // Options Volume
+    tknPtr = strtok(NULL, ",");
+    printf("\tThe SPX Options Volume is: %s", tknPtr);
+    printVolumeQualityMessage("The SPX Options Volume is", (strtod(tknPtr, &endPtr) / 2)); // averaged out
+
 }
 
 int *get_data(char *date, int entries) {
