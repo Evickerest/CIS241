@@ -9,6 +9,7 @@ void getDataFromDate(char *date, char*dateData);
 
 int main() {
     char date[50], data[400];
+    int entries;
   
     do {
         readDateFromUser(date); 
@@ -17,7 +18,12 @@ int main() {
     while( strcmp("none", data) == 0 ); 
     // if no data ask user for date again
    
-    get_date_data(data);
+    get_date_data(data); // Print out data from date
+
+    printf("Enter number of entries (roughly days) from %s (inclusive) to compute the range averages.\n", date);
+    scanf("%d", &entries);
+    get_data(date, entries);
+
     return 0;
 }
 
@@ -68,6 +74,7 @@ void getStockQuality(double ratio, char *quality){
     }
 }
 
+
 void getVolumeQuality(double volume, char *quality){
     if( volume >= 8e5 ){ 
         strcpy(quality,"very high");
@@ -88,11 +95,13 @@ void getVolumeQuality(double volume, char *quality){
     }
 }
 
+
 void printVolumeQualityMessage(char *message, double volume ){
     char quality[30];
     getVolumeQuality(volume, quality);
     printf("\n\t\t%s %s.\n\n", message, quality);
 }
+
 
 void printStockQualityMessage(char *message, double volume ){
     char quality[30];
@@ -132,70 +141,62 @@ void get_date_data(char*data) {
 
 int *get_data(char *date, int entries) {
     FILE *fp;
-    char string[400];
-    char *tknPtr;
-    char *endPtr;
-    int i;
-    char date2[50];
-    int month, day, year;
+    char *tknPtr,*endPtr,*endDate,string[400];
+    int month, day, year, count;
     float sum, init, final;
-    int count;
     
     count = 0;
     sum = 0;
     
     fp = fopen("./spxpc.csv", "r");
-    for (i = 0; i < 2332; i++) {
+    for (int i = 0; i < 2332; i++) {
         fgets(string, 399, (FILE*)fp);
         tknPtr = strtok(string, ",");
+
         if ( strstr(string, date) != NULL ) {
-            printf("Start Date: %s\n", tknPtr);
             tknPtr = strtok(NULL, ",");
             sum += strtod(tknPtr, &endPtr);
             init = sum;
             count += 1;
-        }
-        else {
+
+        } else {
             if (count > 0) {
+                endDate = tknPtr;
                 tknPtr = strtok(NULL, ",");
                 final = strtod(tknPtr, &endPtr);
                 sum += final;
                 count += 1;
                 if ( count == entries ) {
-                    printf("Avg P/C Ratio: %f\n", sum / count);
-                    printf("Initial P/C Ratio: %f\n", init);
-                    printf("Final P/C Ratio: %f\n", final);
+                    printf("\nDate Range: %s to %s\n", date, endDate);
+                    printf("\tAvg P/C Ratio: %f\n", sum / count);
+                    printf("\tInitial P/C Ratio: %f\n", init);
+                    printf("\tFinal P/C Ratio: %f\n", final);
+
                     if (init + 0.1 < final) {
                         printf("Woohoo! The stock is doing very well after %d entries.\n", count);
+                    } else if (init + 0.03 < final) {
+                        printf("Woo! The stock is doing well after %d entries.\n", count);
+                    } else if (init + 0.03 > final) {
+                        printf("The stock is a little worse after %d entries.\n", count);
+                    } else {
+                        printf("The stock is doing a lot worse after %d entries.\n", count);
                     }
-                    else {
-                        if (init + 0.03 < final) {
-                            printf("Woops! The stock is doing well after %d entries.\n", count);
-                        }
-                        else {
-                            if (init + 0.03 > final) {
-                                printf("The stock is a little worse after %d entries.\n", count);
-                            }
-                            else {
-                                printf("The stock is doing a lot worse after %d entries.\n", count);
-                            }
-                        }
-                    }
+                    
                     fclose(fp);
                     printf("\n");
                     return 0;
-                }
-                else {
+                } else {
                     if (i >= 2331) {
-		        printf("Not enough dates for a full %d-day analysis. Only read %d entries.\n", entries, count);
-		        printf("Avg P/C Ratio: %f\n", sum / count);
-		        printf("Initial P/C Ratio: %f\n", init);
-		        printf("Final P/C Ratio: %f\n\n", final);
-		   }
+                        printf("Not enough dates for a full %d-day analysis. Only read %d entries.\n", entries, count);
+                        printf("\tAvg P/C Ratio: %f\n", sum / count);
+                        printf("\tInitial P/C Ratio: %f\n", init);
+                        printf("\tFinal P/C Ratio: %f\n\n", final);
+		            }        
                 }
-            }
+            } 
         }
     }
+
     fclose(fp);
     return 0;
 }
