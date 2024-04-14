@@ -20,7 +20,7 @@ int main() {
    
     get_date_data(data); // Print out data from date
 
-    printf("Enter number of entries (roughly days) from %s (inclusive) to compute the range averages.\n", date);
+    printf("Enter number of entries (roughly days) starting from %s (inclusive) to compute the range averages.\n", date);
     scanf("%d", &entries);
     get_data(date, entries);
 
@@ -28,7 +28,7 @@ int main() {
 }
 
 
-void readDateFromUser(char *date){
+void readDateFromUser(char *date){ // Reads a date from the user
     int m, d, y;
 
     puts("Enter the date you want to get data for.\n  Format: M/D/Y - Do Not Include Leading Zeros\n  Valid Date Range: 7/6/10 - 10/4/19");
@@ -58,7 +58,7 @@ void getDataFromDate(char * date, char * dateData){
 }
 
 
-void getStockQuality(double ratio, char *quality){
+void getStockQuality(double ratio, char *quality){ // Determines what message to print for put/call ratio
     if( ratio >= 2 ){ // bearish
         strcpy(quality,"dangerously bearish");
     } else if( ratio >= 1.75){
@@ -75,7 +75,7 @@ void getStockQuality(double ratio, char *quality){
 }
 
 
-void getVolumeQuality(double volume, char *quality){
+void getVolumeQuality(double volume, char *quality){ // Determines what message to print for stock volume
     if( volume >= 8e5 ){ 
         strcpy(quality,"very high");
     } else if( volume >= 7e5){
@@ -96,21 +96,21 @@ void getVolumeQuality(double volume, char *quality){
 }
 
 
-void printVolumeQualityMessage(char *message, double volume ){
+void printVolumeQualityMessage(char *message, double volume ){ // Print the volume string message
     char quality[30];
     getVolumeQuality(volume, quality);
     printf("\n\t\t%s %s.\n\n", message, quality);
 }
 
 
-void printStockQualityMessage(char *message, double volume ){
+void printStockQualityMessage(char *message, double volume ){ // Print the put/call ratio message
     char quality[30];
     getStockQuality(volume, quality);
     printf("\n\t\t%s %s.\n\n", message, quality);
 }
 
 
-void get_date_data(char*data) {
+void get_date_data(char*data) { // Prints all information about the selected date
     char *tknPtr, *endPtr;
   
     // Stock Data
@@ -136,10 +136,9 @@ void get_date_data(char*data) {
     tknPtr = strtok(NULL, ",");
     printf("\tThe SPX Options Volume is: %s", tknPtr);
     printVolumeQualityMessage("The SPX Options Volume is", (strtod(tknPtr, &endPtr) / 2)); // averaged out
-
 }
 
-int *get_data(char *date, int entries) {
+int *get_data(char *date, int entries) { // Gets data and analysis for put/call ratio
     FILE *fp;
     char *tknPtr,*endPtr,*endDate,string[400];
     int month, day, year, count;
@@ -149,29 +148,33 @@ int *get_data(char *date, int entries) {
     sum = 0;
     
     fp = fopen("./spxpc.csv", "r");
-    for (int i = 0; i < 2332; i++) {
-        fgets(string, 399, (FILE*)fp);
-        tknPtr = strtok(string, ",");
+    for (int i = 0; i < 2332; i++) { // Loop through all the lines of the file
+        fgets(string, 399, (FILE*)fp); // Stores the contents of a line
+        tknPtr = strtok(string, ","); // Gets the first string token for the date
 
-        if ( strstr(string, date) != NULL ) {
-            tknPtr = strtok(NULL, ",");
-            sum += strtod(tknPtr, &endPtr);
-            init = sum;
-            count += 1;
+        if ( strstr(string, date) != NULL ) { // If the date of the token matches the desired date
+            tknPtr = strtok(NULL, ","); // Get the put/call ratio
+            sum += strtod(tknPtr, &endPtr); // Add the put/call ratio to sum
+            init = sum; // Store the initial put/call ratio 
+            count += 1; // Increment count to allow for averaging later
+            if (i >=2331) { // Prints if the date is the last one
+                printf("\nThis is the last date! No future analysis possible.\n");
+            }
 
         } else {
-            if (count > 0) {
-                endDate = tknPtr;
+            if (count > 0) { // Adds data from dates after the first match
+                endDate = tknPtr; // The date at the end of the range
                 tknPtr = strtok(NULL, ",");
-                final = strtod(tknPtr, &endPtr);
-                sum += final;
-                count += 1;
-                if ( count == entries ) {
+                final = strtod(tknPtr, &endPtr); // The put/call ratio at the end of the range
+                sum += final; // Add the put/call ratio to the sum
+                count += 1; // Increment count to allow for averaging later
+                if ( count >= entries ) { // Prints if there are enough entries for the full range analysis
                     printf("\nDate Range: %s to %s\n", date, endDate);
                     printf("\tAvg P/C Ratio: %f\n", sum / count);
                     printf("\tInitial P/C Ratio: %f\n", init);
                     printf("\tFinal P/C Ratio: %f\n", final);
 
+		    // prints differently based on how the intial put/call ratio compares with the final
                     if (init + 0.1 < final) {
                         printf("Woohoo! The stock is doing very well after %d entries.\n", count);
                     } else if (init + 0.03 < final) {
@@ -181,22 +184,21 @@ int *get_data(char *date, int entries) {
                     } else {
                         printf("The stock is doing a lot worse after %d entries.\n", count);
                     }
-                    
                     fclose(fp);
                     printf("\n");
                     return 0;
                 } else {
-                    if (i >= 2331) {
-                        printf("Not enough dates for a full %d-day analysis. Only read %d entries.\n", entries, count);
+                    if (i >= 2331) { // Prints if there aren't enough entries for the full range analysis
+                        printf("\nNot enough dates for a full %d-day analysis. Only read %d entries.\n", entries, count);
+                        printf("\nDate Range: %s to %s\n", date, endDate);
                         printf("\tAvg P/C Ratio: %f\n", sum / count);
                         printf("\tInitial P/C Ratio: %f\n", init);
                         printf("\tFinal P/C Ratio: %f\n\n", final);
-		            }        
+		    }        
                 }
             } 
         }
     }
-
     fclose(fp);
     return 0;
 }
