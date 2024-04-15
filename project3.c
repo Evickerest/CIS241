@@ -2,8 +2,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-void get_date_data(char *data);
-int *get_data(char *date, int entries);
+void printDateData(char *data);
+int *printDateFromRange(char *date, int entries);
 void readDateFromUser(char *date);
 void getDataFromDate(char *date, char*dateData);
 
@@ -18,11 +18,11 @@ int main() {
     while( strcmp("none", data) == 0 ); 
     // if no data ask user for date again
    
-    get_date_data(data); // Print out data from date
+    printDateData(data); // Print out data from date
 
     printf("Enter number of entries (roughly days) starting from %s (inclusive) to compute the range averages.\n", date);
     scanf("%d", &entries);
-    get_data(date, entries);
+    printDateFromRange(date, entries);
 
     return 0;
 }
@@ -110,7 +110,7 @@ void printStockQualityMessage(char *message, double volume ){ // Print the put/c
 }
 
 
-void get_date_data(char*data) { // Prints all information about the selected date
+void printDateData(char*data) { // Prints all information about the selected date
     char *tknPtr, *endPtr;
   
     // Stock Data
@@ -138,14 +138,14 @@ void get_date_data(char*data) { // Prints all information about the selected dat
     printVolumeQualityMessage("The SPX Options Volume is", (strtod(tknPtr, &endPtr) / 2)); // averaged out
 }
 
-int *get_data(char *date, int entries) { // Gets data and analysis for put/call ratio
+int *printDateFromRange(char *date, int entries) { // Gets data and analysis for put/call ratio
     FILE *fp;
     char *tknPtr,*endPtr,*endDate, string[400], data[400];
-    int month, day, year, count;
-    float sum, init, final;
+    int month, day, year, entryCount;
+    float sumRatio, initRatio, finalRatio;
     
-    count = 0;
-    sum = 0;
+    entryCount = 0;
+    sumRatio = 0;
     
     fp = fopen("./spxpc.csv", "r");
     for (int i = 0; i < 2332; i++) { // Loop through all the lines of the file
@@ -154,58 +154,66 @@ int *get_data(char *date, int entries) { // Gets data and analysis for put/call 
 
         if ( strstr(string, date) != NULL ) { // If the date of the token matches the desired date
             tknPtr = strtok(NULL, ","); // Get the put/call ratio
-            sum += strtod(tknPtr, &endPtr); // Add the put/call ratio to sum
-            init = sum; // Store the initial put/call ratio 
-            count += 1; // Increment count to allow for averaging later
+            sumRatio += strtod(tknPtr, &endPtr); // Add the put/call ratio to sumRatio
+            initRatio = sumRatio; // Store the initial put/call ratio 
+            entryCount += 1; // Increment entryCount to allow for averaging later
             if (i >=2331) { // Prints if the date is the last one
                 printf("\nThis is the last date! No future analysis possible.\n");
             }
 
         } else {
-            if (count > 0) { // Adds data from dates after the first match
+            if (entryCount > 0) { // Adds data from dates after the first match
                 endDate = tknPtr; // The date at the end of the range
                 tknPtr = strtok(NULL, ",");
-                final = strtod(tknPtr, &endPtr); // The put/call ratio at the end of the range
-                sum += final; // Add the put/call ratio to the sum
-                count += 1; // Increment count to allow for averaging later
-                if ( count >= entries ) { // Prints if there are enough entries for the full range analysis
+                finalRatio = strtod(tknPtr, &endPtr); // The put/call ratio at the end of the range
+                sumRatio += finalRatio; // Add the put/call ratio to the sumRatio
+                entryCount += 1; // Increment entryCount to allow for averaging later
+                if ( entryCount >= entries ) { // Prints if there are enough entries for the full range analysis
                     printf("\nDate Range: %s to %s\n", date, endDate);
-                    printf("\tAvg P/C Ratio: %f\n", sum / count);
-                    printf("\tInitial P/C Ratio: %f\n", init);
-                    printf("\tFinal P/C Ratio: %f\n", final);
+                    printf("\tAvg P/C Ratio: %f\n", sumRatio / entryCount);
+                    printf("\tInitial P/C Ratio: %f\n", initRatio);
+                    printf("\tFinal P/C Ratio: %f\n", finalRatio);
 
-		    // prints differently based on how the intial put/call ratio compares with the final
-                    if (init + 0.1 < final) {
-                        printf("The put/call ratio has increased after %d entries.\n", count);
+		        // prints differently based on how the intial put/call ratio compares with the final
+                    if (initRatio < finalRatio) {
+                        printf("The put/call ratio has increased after %d entries.\n", entryCount);
                         printf("Recommendation: Consider buying more puts.\n");
-                        printf("Woohoo! The stock is doing very well after %d entries.\n", count);
-                    } else if (init + 0.03 < final) {
-                        printf("The put/call ratio has decreased after %d entries.\n", count);
+                    } else if (initRatio > finalRatio) {
+                        printf("The put/call ratio has decreased after %d entries.\n", entryCount);
                         printf("Recommendation: Consider buying more calls.\n");
-                        printf("Woo! The stock is doing well after %d entries.\n", count);
-                    } else if (init + 0.03 > final) {
-                        printf("The put/call ratio has remained the same after %d entries.\n", count);
-                        printf("No specific recommendation for buying more puts or calls at this time.\n");
-                        printf("The stock is a little worse after %d entries.\n", count);
                     } else {
-                        printf("The stock is doing a lot worse after %d entries.\n", count);
+                        printf("The put/call ratio has remained the same after %d entries.\n", entryCount);
+                        printf("No specific recommendation for buying more puts or calls at this time.\n");
+                    } 
+
+                    if( initRatio - 0.5 < finalRatio ){
+                        printf("Woohoo! The stock is doing very well after %d entries.\n", entryCount);
+                    } else if( finalRatio + 0.5 > initRatio){
+                        printf("Woo! The stock is doing well after %d entries.\n", entryCount);
+                    } else if (finalRatio + 1 > initRatio){
+                        printf("The stock is doing a lot worse after %d entries.\n", entryCount);
+                    } else {
+                        printf("The stock is doing similarly after %d entries.\n", entryCount);
                     }
+
                     fclose(fp);
                     printf("\n");
+
                     getDataFromDate(endDate, data); // Get data about the endDate
-                    get_date_data(data); // Print data and analysis about endDate
+                    printDateData(data); // Print data and analysis about endDate
                     return 0;
                 } else {
                     if (i >= 2331) { // Prints if there aren't enough entries for the full range analysis
-                        printf("\nNot enough dates for a full %d-day analysis. Only read %d entries.\n", entries, count);
+                        printf("\nNot enough dates for a full %d-day analysis. Only read %d entries.\n", entries, entryCount);
                         printf("\nDate Range: %s to %s\n", date, endDate);
-                        printf("\tAvg P/C Ratio: %f\n", sum / count);
-                        printf("\tInitial P/C Ratio: %f\n", init);
-                        printf("\tFinal P/C Ratio: %f\n", final);
+                        printf("\tAvg P/C Ratio: %f\n", sumRatio / entryCount);
+                        printf("\tInitial P/C Ratio: %f\n", initRatio);
+                        printf("\tFinal P/C Ratio: %f\n", finalRatio);
+
                         getDataFromDate(endDate, data); // Get data about the endDate
-                        get_date_data(data); // Print data and analysis about endDate
+                        printDateData(data); // Print data and analysis about endDate
                         return 0;
-		    }
+		     }
                 }
             }
         }
