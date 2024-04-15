@@ -10,7 +10,7 @@ void getDataFromDate(char *date, char*dateData);
 int main() {
     char date[50], data[400];
     int entries;
-  
+
     do {
         readDateFromUser(date); 
         getDataFromDate(date, data);
@@ -140,7 +140,7 @@ void get_date_data(char*data) { // Prints all information about the selected dat
 
 int *get_data(char *date, int entries) { // Gets data and analysis for put/call ratio
     FILE *fp;
-    char *tknPtr,*endPtr,*endDate,string[400];
+    char *tknPtr,*endPtr,*endDate, string[400], data[400];
     int month, day, year, count;
     float sum, init, final;
     
@@ -192,6 +192,8 @@ int *get_data(char *date, int entries) { // Gets data and analysis for put/call 
                     }
                     fclose(fp);
                     printf("\n");
+                    getDataFromDate(endDate, data); // Get data about the endDate
+                    get_date_data(data); // Print data and analysis about endDate
                     return 0;
                 } else {
                     if (i >= 2331) { // Prints if there aren't enough entries for the full range analysis
@@ -199,10 +201,13 @@ int *get_data(char *date, int entries) { // Gets data and analysis for put/call 
                         printf("\nDate Range: %s to %s\n", date, endDate);
                         printf("\tAvg P/C Ratio: %f\n", sum / count);
                         printf("\tInitial P/C Ratio: %f\n", init);
-                        printf("\tFinal P/C Ratio: %f\n\n", final);
-		    }        
+                        printf("\tFinal P/C Ratio: %f\n", final);
+                        getDataFromDate(endDate, data); // Get data about the endDate
+                        get_date_data(data); // Print data and analysis about endDate
+                        return 0;
+		    }
                 }
-            } 
+            }
         }
     }
     fclose(fp);
