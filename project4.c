@@ -9,20 +9,34 @@ void getDataFromDate(char *date, char*dateData);
 
 int main() {
     char date[50], data[400];
-    int entries;
+    int entries, extraEntires = -1;
 
-    do {
-        readDateFromUser(date); 
-        getDataFromDate(date, data);
+    // main loop
+    while( extraEntires == -1){
+        do {
+            readDateFromUser(date); 
+            getDataFromDate(date, data);
+        }
+        // if no data ask user for date again
+        while( strcmp("none", data) == 0 ); 
+    
+        printDateData(data); // Print out data from date
+
+        printf("\n\nEnter number of entries (roughly days) starting from %s (inclusive) to compute the range averages.\n", date);
+        scanf("%d", &entries);
+        printDateFromRange(date, entries);
+
+        printf("\n\nEnter another number of entries from %s. (0 to quit or -1 to enter new start Date)\n", date);
+        scanf("%d", &extraEntires );
+
+        // if user enters 0 or -1, loop will quit
+        // if user enters -1, main loop will begin again
+        while( extraEntires > 0 ){
+            printDateFromRange(date, extraEntires);
+            printf("\n\nEnter another number of entries from %s. (0 to quit or -1 to enter new start Date)\n", date);
+            scanf("%d", &extraEntires );
+        };
     }
-    while( strcmp("none", data) == 0 ); 
-    // if no data ask user for date again
-   
-    printDateData(data); // Print out data from date
-
-    printf("Enter number of entries (roughly days) starting from %s (inclusive) to compute the range averages.\n", date);
-    scanf("%d", &entries);
-    printDateFromRange(date, entries);
 
     return 0;
 }
@@ -31,7 +45,7 @@ int main() {
 void readDateFromUser(char *date){ // Reads a date from the user
     int m, d, y;
 
-    puts("Enter the date you want to get data for.\n  Format: M/D/Y - Do Not Include Leading Zeros\n  Valid Date Range: 7/6/10 - 10/4/19");
+    puts("\nEnter the date you want to get data for.\n  Format: M/D/Y - Do Not Include Leading Zeros\n  Valid Date Range: 7/6/10 - 10/4/19");
     
     scanf("%d/%d/%d", &m, &d, &y);
     sprintf(date, "%d/%d/%d", m, d, y);
@@ -99,14 +113,14 @@ void getVolumeQuality(double volume, char *quality){ // Determines what message 
 void printVolumeQualityMessage(char *message, double volume ){ // Print the volume string message
     char quality[30];
     getVolumeQuality(volume, quality);
-    printf("\n\t\t%s %s.\n\n", message, quality);
+    printf("\n\t\t%s %s\n", message, quality);
 }
 
 
 void printStockQualityMessage(char *message, double volume ){ // Print the put/call ratio message
     char quality[30];
     getStockQuality(volume, quality);
-    printf("\n\t\t%s %s.\n\n", message, quality);
+    printf("\n\t\t%s %s\n", message, quality);
 }
 
 
@@ -119,28 +133,81 @@ void printDateData(char*data) { // Prints all information about the selected dat
 
     // Put/Call Ratio
     tknPtr = strtok(NULL, ",");
-    printf("\tThe Put/Call ratio is: %s", tknPtr);
+    printf("\tThe Put/Call ratio is: %s\t", tknPtr);
     printStockQualityMessage("The Stock is", strtod(tknPtr, &endPtr));
 
     // Put
     tknPtr = strtok(NULL, ",");
-    printf("\tThe SPX Put Volume is: %s", tknPtr);
+    printf("\tThe SPX Put Volume is: %s\t", tknPtr);
     printVolumeQualityMessage("The SPX Put Volume is", strtod(tknPtr, &endPtr));
 
     // Call
     tknPtr = strtok(NULL, ",");
-    printf("\tThe SPX Call Volume is: %s", tknPtr);
+    printf("\tThe SPX Call Volume is: %s\t", tknPtr);
     printVolumeQualityMessage("The SPX Call Volume is", strtod(tknPtr, &endPtr));
 
     // Options Volume
     tknPtr = strtok(NULL, ",");
-    printf("\tThe SPX Options Volume is: %s", tknPtr);
+    tknPtr[strcspn(tknPtr,"\n")] = 0;  //removes trailing whitespace
+
+    printf("\tThe SPX Options Volume is: %s\t", tknPtr);
     printVolumeQualityMessage("The SPX Options Volume is", (strtod(tknPtr, &endPtr) / 2)); // averaged out
+}
+
+void printRangeDate(char *firstData, char *endData){
+    char *firstDate, *endDate, 
+         *firstRatio, *endRatio,
+         *firstPutVolume, *endPutVolume,
+         *firstCallVolume, *endCallVolume,
+         *firstVolume, *endVolume,
+         *endPtr, *endPtr2;
+    double difference = 0;
+
+    firstDate = strtok(firstData, ",");
+    firstRatio = strtok(NULL, ",");
+    firstPutVolume = strtok(NULL, ",");
+    firstCallVolume = strtok(NULL, ",");
+    firstVolume = strtok(NULL, ",");
+    firstVolume[strcspn(firstVolume,"\n")] = 0; //removes trailing whitespace
+
+    endDate = strtok(endData, ",");
+    endRatio = strtok(NULL, ",");
+    endPutVolume = strtok(NULL, ",");
+    endCallVolume = strtok(NULL, ",");
+    endVolume = strtok(NULL, ",");
+    endVolume[strcspn(endVolume,"\n")] = 0;  //removes trailing whitespace
+
+    printf("\n\n\t\t -- %s -- \t -- %s -- \t -- Difference --\n", firstDate, endDate);
+
+    // Put/Call Ratio
+    difference = strtod(endRatio, &endPtr)-strtod(firstRatio, &endPtr2);
+    printf("Put/Call Ratio \t| %s \t\t| %s \t\t| %f\n",firstRatio, endRatio, difference);
+
+    // Put Volume
+    difference = strtod(endPutVolume, &endPtr)-strtod(firstPutVolume, &endPtr2);
+    printf("Put Volume \t| %s \t| %s \t| %f\n",firstPutVolume, endPutVolume, difference);
+
+    // Call Volume
+    difference = strtod(endCallVolume, &endPtr)-strtod(firstCallVolume, &endPtr2);
+    printf("Call Volume \t| %s \t| %s \t| %f\n",firstCallVolume, endCallVolume, difference);
+
+    // Total Volume
+    difference = strtod(endVolume, &endPtr)-strtod(firstVolume, &endPtr2);
+    printf("Volume \t\t| %s \t| %s \t| %f\n",firstVolume, endVolume, difference);
+
+    printf("\nStock data for %s:", endDate);
+    printStockQualityMessage("The Stock is", strtod(endRatio, &endPtr));
+    printVolumeQualityMessage("The SPX Put Volume is", strtod(endPutVolume, &endPtr));
+    printVolumeQualityMessage("The SPX Call Volume is", strtod(endCallVolume, &endPtr));
+    printVolumeQualityMessage("The SPX Options Volume is", (strtod(endVolume, &endPtr) / 2)); // averaged out
+
+
+
 }
 
 int *printDateFromRange(char *date, int entries) { // Gets data and analysis for put/call ratio
     FILE *fp;
-    char *tknPtr,*endPtr,*endDate, string[400], data[400];
+    char *tknPtr,*endPtr,*endDate, string[400], data1[400], data2[400];
     int month, day, year, entryCount;
     float sumRatio, initRatio, finalRatio;
     
@@ -187,6 +254,16 @@ int *printDateFromRange(char *date, int entries) { // Gets data and analysis for
             }
         }
     }
+     if( initRatio - 0.5 < finalRatio ){
+        printf("Woohoo! The stock is doing very well after %d entries.\n", entryCount);
+    } else if( finalRatio + 0.5 > initRatio){
+        printf("Woo! The stock is doing well after %d entries.\n", entryCount);
+    } else if (finalRatio + 1 > initRatio){
+        printf("The stock is doing a lot worse after %d entries.\n", entryCount);
+    } else {
+        printf("The stock is doing similarly after %d entries.\n", entryCount);
+    }
+
     // Prints differently based on how the intial put/call ratio compares with the final
     if (initRatio < finalRatio) {
         printf("The put/call ratio has increased after %d entries.\n", entryCount);
@@ -198,17 +275,12 @@ int *printDateFromRange(char *date, int entries) { // Gets data and analysis for
         printf("The put/call ratio has remained the same after %d entries.\n", entryCount);
         printf("No specific recommendation for buying more puts or calls at this time.\n");
     }
-    if( initRatio - 0.5 < finalRatio ){
-        printf("Woohoo! The stock is doing very well after %d entries.\n", entryCount);
-    } else if( finalRatio + 0.5 > initRatio){
-        printf("Woo! The stock is doing well after %d entries.\n", entryCount);
-    } else if (finalRatio + 1 > initRatio){
-        printf("The stock is doing a lot worse after %d entries.\n", entryCount);
-    } else {
-        printf("The stock is doing similarly after %d entries.\n", entryCount);
-    }
+   
     fclose(fp);
-    getDataFromDate(endDate, data); // Get data about the endDate
-    printDateData(data); // Print data and analysis about endDate
+
+    getDataFromDate(date, data1);
+    getDataFromDate(endDate, data2); // Get data about the endDate
+    printRangeDate(data1, data2);
+
     return 0;
 }
