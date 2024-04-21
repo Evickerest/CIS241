@@ -29,7 +29,7 @@ int main() {
         printf("\n\nEnter another number of entries from %s. (0 to quit or -1 to enter new start Date)\n", date);
         scanf("%d", &extraEntires );
 
-        // if user enters 0 or -1, loop will quit
+        // if user enters 0, loop will quit
         // if user enters -1, main loop will begin again
         while( extraEntires > 0 ){
             printDateFromRange(date, extraEntires);
@@ -254,24 +254,18 @@ int *printDateFromRange(char *date, int entries) { // Gets data and analysis for
             }
         }
     }
-     if( initRatio - 0.5 < finalRatio ){
-        printf("Woohoo! The stock is doing very well after %d entries.\n", entryCount);
-    } else if( finalRatio + 0.5 > initRatio){
-        printf("Woo! The stock is doing well after %d entries.\n", entryCount);
-    } else if (finalRatio + 1 > initRatio){
-        printf("The stock is doing a lot worse after %d entries.\n", entryCount);
-    } else {
-        printf("The stock is doing similarly after %d entries.\n", entryCount);
-    }
 
     // Prints differently based on how the intial put/call ratio compares with the final
     if (initRatio < finalRatio) {
+        printf("The stock is doing worse after %d entries.\n", entryCount);
         printf("The put/call ratio has increased after %d entries.\n", entryCount);
         printf("Recommendation: Consider buying more puts.\n");
     } else if (initRatio > finalRatio) {
+        printf("Woohoo! The stock is doing very well after %d entries.\n", entryCount);
         printf("The put/call ratio has decreased after %d entries.\n", entryCount);
         printf("Recommendation: Consider buying more calls.\n");
     } else {
+        printf("The stock is doing similarly after %d entries.\n", entryCount);
         printf("The put/call ratio has remained the same after %d entries.\n", entryCount);
         printf("No specific recommendation for buying more puts or calls at this time.\n");
     }
